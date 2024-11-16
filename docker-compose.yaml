@@ -1,0 +1,44 @@
+services:
+  nginx_server:
+    container_name: nginx_server
+    build:
+      context: .
+      dockerfile: docker/nginx/Dockerfile
+    ports:
+      - 80:80
+    volumes:
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./logs/nginx:/var/log/nginx/
+  php_fpm:
+    container_name: php_fpm
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    user: "1000:1000"
+    volumes:
+      - ./app:/app/
+      - ./logs/php:/var/log/php
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+  php_composer:
+    build:
+      context: .
+      dockerfile: docker/composer/Dockerfile
+    volumes:
+      - ./app:/var/www/html/
+    depends_on:
+      - php_fpm
+    entrypoint: [ 'composer', 'update' ]
+  mysql_database:
+    container_name: mysql_database
+    image: mysql:8.0
+    restart: unless-stopped
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_DATABASE: database_teste
+      MYSQL_ROOT_PASSWORD: 123
+      MYSQL_PASSWORD: 123
+      MYSQL_USER: admin
+    volumes:
+      - ./mysql_data:/var/lib/mysql
